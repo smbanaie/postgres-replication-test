@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # Primary Database
+  primary:
+    image: docker.arvancloud.ir/library/postgres:18
+    container_name: pg-primary
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: myapp
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./primary-data:/var/lib/postgresql/
+      - ./scripts:/scripts
+    command: |
+      postgres 
+      -c wal_level=replica 
+      -c max_wal_senders=3 
+      -c max_replication_slots=3
+      -c hot_standby=on
+    networks:
+      - pg-network
+
+  # Standby Database (Replica)
+  standby:
+    image: docker.arvancloud.ir/library/postgres:18
+    container_name: pg-standby
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./standby-data:/var/lib/postgresql/
+    depends_on:
+      - primary
+    networks:
+      - pg-network
+
+volumes:
+  primary-data:
+  standby-data:
+
+networks:
+  pg-network:
